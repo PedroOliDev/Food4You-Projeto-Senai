@@ -34,6 +34,9 @@
       color: black;
       
     }
+    .modal-content h2 {
+     color: black;
+    }
     .close {
       color: #aaa;
       float: right;
@@ -53,7 +56,7 @@
     }
     .star {
       font-size: 30px;
-      color: #ddd;
+      color: #000000;
       cursor: pointer;
       margin: 0 5px;
     }
@@ -225,6 +228,8 @@ async function fetchRestaurantData(id) {
     return;
   }
 
+  await salvarRestauranteNaSessao(restauranteId);
+
   const restaurant = await fetchRestaurantData(restauranteId);
 
   if (!restaurant) {
@@ -240,6 +245,13 @@ async function fetchRestaurantData(id) {
     `${restaurant.name} - ${planTitle}`;
 })();
 
+async function salvarRestauranteNaSessao(restauranteId) {
+  await fetch(`http://localhost:5000/selecionar-restaurante/${restauranteId}`, {
+    method: "POST",
+    credentials: "include"
+  });
+}
+
 // ------------------------------
 // Envio da assinatura
 // ------------------------------
@@ -253,7 +265,7 @@ document.getElementById('btnAssinar').addEventListener('click', () => {
     metodo: document.getElementById('metodo').value,
     plano: planoId,
     categoria: categoria,
-    restaurante_id: restauranteId
+    
   };
 
   if (!payload.endereco) {

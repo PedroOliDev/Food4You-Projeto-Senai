@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 -- Tornar um usuário admin (caso exista)
 UPDATE usuarios
 SET is_admin = 1
-WHERE email = 'admin@gmail.com';
+WHERE id = 1;
 
 
 -- =======================

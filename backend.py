@@ -8,21 +8,24 @@ from datetime import date, timedelta
 import os
 import json
 import logging
+from dotenv import load_dotenv
+load_dotenv()
+
 
 logging.basicConfig(level=logging.ERROR)
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:5500"}})
-app.secret_key = 'uma_chave_secreta_segura'
-
+app.secret_key = os.environ.get("SECRET_KEY")
 
 def conectar():
     return mysql.connector.connect(
-        host='localhost',
-        user='root',
-        password='21102110p',
-        database='food4you_db'
+        host=os.environ.get("DB_HOST"),
+        user=os.environ.get("DB_USER"),
+        password=os.environ.get("DB_PASSWORD"),
+        database=os.environ.get("DB_NAME")
     )
+
 
 # ====================== ROTAS ======================
 
@@ -58,22 +61,26 @@ def criar_assinatura():
     if 'usuario_id' not in session:
         return jsonify({'message': 'Não autenticado'}), 401
 
+    if 'restaurante_id' not in session:
+        return jsonify({'message': 'Restaurante não selecionado'}), 400
+
     data = request.get_json()
     endereco = data.get('endereco')
     dia = data.get('dia')
     metodo = data.get('metodo')
-    usuario_id = session['usuario_id']  
-    categoria = data.get('categoria')  
-    plano_id = data.get('plano')  
+
+    usuario_id = session['usuario_id']
+    restaurante_id = session['restaurante_id']
 
     if not endereco or not dia or not metodo:
         return jsonify({'message': 'Campos obrigatórios faltando'}), 400
 
-    
-    plano = 'Plano básico'  
+    categoria = data.get('categoria')
+    plano_id = data.get('plano')
+
+    plano = 'Plano básico'
     if categoria and categoria in PLANOS_POR_CATEGORIA:
-        planos = PLANOS_POR_CATEGORIA[categoria]
-        for p in planos:
+        for p in PLANOS_POR_CATEGORIA[categoria]:
             if p['id'] == plano_id:
                 plano = p['title']
                 break
@@ -87,32 +94,36 @@ def criar_assinatura():
         conn = conectar()
         cursor = conn.cursor()
 
-        if metodo == 'pix':
-            detalhe_pag = 'Via PIX'
-        else:
-            detalhe_pag = f"Cartão final {cc.get('numero')[-4:]}"
-
+        detalhe_pag = 'Via PIX' if metodo == 'pix' else f"Cartão final {cc.get('numero')[-4:]}"
         data_inicio = date.today()
         proximo = data_inicio + timedelta(days=30)
 
         cursor.execute("""
             INSERT INTO assinaturas 
-            (id_usuario, data_inicio, status, proximo_pagamento, dia, endereco, metodo_pagamento, detalhe_pagamento, plano)
-            VALUES (%s, %s, 'ativa', %s, %s, %s, %s, %s, %s)
-        """, (usuario_id, data_inicio, proximo, dia, endereco, metodo, detalhe_pag, plano))
+            (id_usuario, restaurante_id, data_inicio, status, proximo_pagamento, dia, endereco, metodo_pagamento, detalhe_pagamento, plano)
+            VALUES (%s, %s, %s, 'ativa', %s, %s, %s, %s, %s, %s)
+        """, (
+            usuario_id,
+            restaurante_id,
+            data_inicio,
+            proximo,
+            dia,
+            endereco,
+            metodo,
+            detalhe_pag,
+            plano
+        ))
 
         conn.commit()
 
         return jsonify({
-            'message': f'Assinatura criada com sucesso! {detalhe_pag}',
+            'message': 'Assinatura criada com sucesso!',
             'assinatura': {
-                'data_inicio': str(data_inicio),
-                'proximo_pagamento': str(proximo),
+                'restaurante_id': restaurante_id,
+                'plano': plano,
                 'status': 'ativa',
-                'dia': dia,
-                'endereco': endereco,
-                'metodo': metodo,
-                'plano': plano
+                'data_inicio': str(data_inicio),
+                'proximo_pagamento': str(proximo)
             }
         }), 200
 
@@ -122,6 +133,21 @@ def criar_assinatura():
         if conn.is_connected():
             cursor.close()
             conn.close()
+
+
+@app.route('/selecionar-restaurante/<int:restaurante_id>', methods=['POST'])
+def selecionar_restaurante(restaurante_id):
+    if 'usuario_id' not in session:
+        return jsonify({'message': 'Não autenticado'}), 401
+
+    session['restaurante_id'] = restaurante_id
+
+    return jsonify({
+        'message': 'Restaurante selecionado com sucesso',
+        'restaurante_id': restaurante_id
+    }), 200
+
+
 
 @app.route('/register', methods=['POST'])
 def register():
