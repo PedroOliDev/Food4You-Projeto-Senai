@@ -1,4 +1,4 @@
-🍔 Food Subscription - Plataforma de Assinatura de Refeições
+🍔 Food4You - Plataforma de Assinatura de Refeições
 
 Este projeto é uma plataforma web de pedidos de comida baseada em assinatura, inspirada no modelo do iFood, porém com um sistema de planos mensais.
 
