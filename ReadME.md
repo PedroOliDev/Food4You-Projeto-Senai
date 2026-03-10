@@ -116,10 +116,10 @@ pelas credenciais do seu MySQL.
 
 Se necessário, instale as bibliotecas usadas no projeto.
 
-Exemplo:
+exemplo:
 
-pip install flask
-pip install mysql-connector-python
+pip install -r requirements.txt
+
 6️⃣ Iniciar o servidor
 
 Agora basta executar o arquivo principal em Python.
